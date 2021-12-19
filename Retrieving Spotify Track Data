@@ -1,0 +1,72 @@
+#importing packages
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
+import pandas as pd
+import time 
+
+
+
+#Connecting to spotify api
+client_id = '0feec4cbb5914d60a09ac54024554895'
+client_secret = 'bd0c589155f349d6bbe8c7bc17240f49'
+
+client_credentials_manager = SpotifyClientCredentials(client_id, client_secret)
+sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+
+
+
+#Creating function that grabs playlist made that contains all Deftones songs
+def getTrackIDs(user, playlist_id):
+    ids = []
+    playlist = sp.user_playlist(user, playlist_id)
+    for item in playlist['tracks']['items']:
+        track = item['track']
+        ids.append(track['id'])
+    return ids
+
+#Using playlist created by user Brenden523
+ids = getTrackIDs('Brenden523', '4VAwnWxtGWRCxvoeabjwJ4')
+
+print(len(ids))
+print(ids)
+
+
+#Function to grab all track data
+def getTrackFeatures(id):
+  meta = sp.track(id)
+  features = sp.audio_features(id)
+
+  # meta
+  name = meta['name']
+  album = meta['album']['name']
+  artist = meta['album']['artists'][0]['name']
+  release_date = meta['album']['release_date']
+  length = meta['duration_ms']
+  popularity = meta['popularity']
+
+  # features
+  acousticness = features[0]['acousticness']
+  danceability = features[0]['danceability']
+  energy = features[0]['energy']
+  instrumentalness = features[0]['instrumentalness']
+  liveness = features[0]['liveness']
+  loudness = features[0]['loudness']
+  speechiness = features[0]['speechiness']
+  tempo = features[0]['tempo']
+  time_signature = features[0]['time_signature']
+
+  track = [name, album, artist, release_date, length, popularity, danceability, acousticness, energy, instrumentalness, liveness, loudness, speechiness, tempo, time_signature]
+  return track
+  
+  
+  
+#Loop to go through track IDs
+tracks = []
+for i in range(len(ids)):
+  time.sleep(.5)
+  track = getTrackFeatures(ids[i])
+  tracks.append(track)
+
+#Create dataframe and export to csv 
+df = pd.DataFrame(tracks, columns = ['name', 'album', 'artist', 'release_date', 'length', 'popularity', 'danceability', 'acousticness', 'energy', 'instrumentalness', 'liveness', 'loudness', 'speechiness', 'tempo', 'time_signature'])
+df.to_csv("spotify.csv", sep = ',')
