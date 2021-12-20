@@ -7,8 +7,8 @@ import time
 
 
 #Connecting to spotify api
-client_id = '0feec4cbb5914d60a09ac54024554895'
-client_secret = 'bd0c589155f349d6bbe8c7bc17240f49'
+client_id = 'CLIENT ID'
+client_secret = 'CLIENT SECRET'
 
 client_credentials_manager = SpotifyClientCredentials(client_id, client_secret)
 sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
