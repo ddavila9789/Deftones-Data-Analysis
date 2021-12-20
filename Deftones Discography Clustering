@@ -1,0 +1,139 @@
+#importing all packages needed
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+import seaborn as sns
+from yellowbrick.cluster import KElbowVisualizer
+from kneed import KneeLocator
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+sns.set()
+
+deftones_data = pd.read_csv("deftones data.csv")
+
+
+
+#Cleaning dataset for ML
+
+deftones_data = pd.read_csv("deftones data.csv")
+
+non_features = ['name', 'artist', 'album', 'release_date','length', 'popularity', 'time_signature']
+track_info = deftones_data[non_features]
+df_X = deftones_data.drop(columns=non_features)
+df_X.head()
+
+
+
+
+#PCA (Principle Component Analysis)
+
+scaler = StandardScaler()
+X_std = scaler.fit_transform(df_X)
+
+pca = PCA()
+pca.fit(X_std);
+
+#getting variance of each component
+variance = pca.explained_variance_ratio_
+variance
+
+fig = plt.figure(figsize=(10,8))
+plt.plot(range(1, len(df_X.columns)+1), variance.cumsum(), marker='o', linestyle='--')
+plt.xlabel('Number of Components', fontsize=18)
+plt.ylabel('Cumulative Explained Variance',fontsize=18)
+plt.xticks(fontsize=16)
+plt.yticks(fontsize=16)
+fig = plt.savefig("variance fig")
+plt.show()
+
+
+
+#Calculating number of components for clustering
+for i, exp_var in enumerate(variance.cumsum()):
+    if exp_var >= 0.8:
+        n_comps = i + 1
+        break
+print("Number of components:", n_comps)
+pca = PCA(n_components=n_comps)
+pca.fit(X_std)
+scores_pca = pca.transform(X_std)
+
+
+
+
+#Viz to show clusters based on elbow
+viz = KElbowVisualizer(KMeans(init='k-means++', random_state=42), k=(1,21), timings=False)
+viz.fit(scores_pca)
+viz.show()
+n_clusters = viz.elbow_value_
+print("Optimal number of clusters:", n_clusters)
+
+
+kmeans_pca = KMeans(n_clusters=n_clusters, init='k-means++', random_state=42)
+kmeans_pca.fit(scores_pca);
+
+
+
+
+#Creating new dataframe with PCA component scores
+df_seg_pca_kmeans = pd.concat([df_X.reset_index(drop=True), pd.DataFrame(scores_pca)], axis=1)
+df_seg_pca_kmeans.columns.values[(-1*n_comps):] = ["Component " + str(i+1) for i in range(n_comps)]
+df_seg_pca_kmeans['Cluster'] = kmeans_pca.labels_
+df_seg_pca_kmeans.head()
+
+
+
+
+#Data viz that shows clustering of tracks from Deftones discography
+x = df_seg_pca_kmeans['Component 2']
+y = df_seg_pca_kmeans['Component 1']
+fig = plt.figure(figsize=(10, 8))
+sns.scatterplot(x, y, hue=df_seg_pca_kmeans['Cluster'], palette = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple','goldenrod', 'tab:cyan'])
+plt.title('Clusters by PCA Components', fontsize=20)
+plt.xlabel("Component 2", fontsize=18)
+plt.ylabel("Component 1", fontsize=18)
+plt.xticks(fontsize=16)
+plt.yticks(fontsize=16)
+plt.show()
+fig.savefig("cluster fig")
+
+
+
+
+
+#Final dataframe that includes the exact 'Cluster' each track belongs to
+deftones_data['Cluster'] = df_seg_pca_kmeans['Cluster']
+deftones_data
+
+
+
+
+
+#Creating separate dataframes from each Cluster
+Cluster0 = deftones_data[deftones_data['Cluster'] == 0]
+Cluster1 = deftones_data[deftones_data['Cluster'] == 1]
+Cluster2 = deftones_data[deftones_data['Cluster'] == 2]
+Cluster3 = deftones_data[deftones_data['Cluster'] == 3]
+Cluster4 = deftones_data[deftones_data['Cluster'] == 4]
+Cluster5 = deftones_data[deftones_data['Cluster'] == 5]
+Cluster6 = deftones_data[deftones_data['Cluster'] == 6]
+
+
+
+
+
+#Data viz to show popularity and commonality of songs within clusters
+pop_fig = plt.figure(figsize=(10, 8))
+sns.swarmplot(x='Cluster', y='popularity', data=deftones_data, palette = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple','goldenrod', 'tab:cyan'])
+plt.title('Popular Songs by Clusters', fontsize=20)
+plt.xlabel("Cluster", fontsize=18)
+plt.ylabel("Popularity", fontsize=18)
+plt.xticks(fontsize=16)
+plt.yticks(fontsize=16)
+plt.show()
+fig.savefig("popular cluster fig")
