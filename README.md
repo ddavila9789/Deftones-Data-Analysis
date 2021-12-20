@@ -1,2 +1,2 @@
 # Deftones-Data-Analysis
-Retrieving and analyzing Deftones track data from Spotify Web API
+Retrieving, clustering, and analyzing Deftones track data from Spotify Web API
